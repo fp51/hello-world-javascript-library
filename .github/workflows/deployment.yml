@@ -43,7 +43,7 @@ jobs:
     - uses: actions/setup-node@v2
       with:
         registry-url: https://registry.npmjs.org/
-        node-verion: '14'
+        node-version: '14'
 
     - name: Install
       run: npm ci
