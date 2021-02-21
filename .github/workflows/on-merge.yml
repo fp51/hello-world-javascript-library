@@ -2,7 +2,7 @@ name: On merge
 
 on:
   pull_request:
-    branches: [master]
+    branches: [main]
     types: [closed]
 
 jobs:
@@ -13,32 +13,19 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
-        ref: master
+        ref: main
         token: ${{ secrets.TOKEN_REPO_WRITE }}
 
     - name: Git config
       run: |
         git config user.name "Github actions"
-        git config user.email "github-actions@iadvize.com"
+        git config user.email "github-actions@fp51.dev"
 
-    - name: Fetch or create gh-pages
-      run: |
-        if git fetch origin gh-pages; then
-          git branch --track gh-pages origin/gh-pages
-        else
-          git checkout --orphan gh-pages
+    - uses: fp51/actions/create-gh-pages-branch@main
 
-          git reset .
-          git commit --allow-empty -m "Init"
-
-          git push origin gh-pages
-
-          git checkout -f master
-        fi
-
-    - uses: actions/setup-node@v1
+    - uses: actions/setup-node@v2
       with:
-        node-verion: '12.x'
+        node-verion: '14'
 
     - name: Install
       run: npm ci
@@ -75,15 +62,15 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
-        ref: master
+        ref: main
         token: ${{ secrets.TOKEN_REPO_WRITE }}
 
     - name: Git config
       run: |
         git config user.name "Github actions"
-        git config user.email "github-actions@iadvize.com"
+        git config user.email "github-actions@fp51.dev"
 
-    - uses: actions/setup-node@v1
+    - uses: actions/setup-node@v2
       with:
         node-verion: '12.x'
 
@@ -127,7 +114,7 @@ jobs:
     - name: Bumb classic version
       if: steps.extract-version-label.outputs.versionBump != 'beta'
       env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        NODE_AUTH_TOKEN: ${{ secrets.TOKEN_NPM }}
         BUMP_TYPE: ${{ steps.extract-version-label.outputs.versionBump }}
       run: |
         npm --no-git-tag-version version $BUMP_TYPE
@@ -148,7 +135,7 @@ jobs:
       run: |
         npm version prerelease --preid=beta
 
-    - name: Push on master
+    - name: Push on main
       id: push
       run: |
         git push
@@ -165,7 +152,7 @@ jobs:
 
     - name: Create deployment
       id: deployment
-      uses: actions/github-script@v2
+      uses: actions/github-script@v3
       env:
         REF: ${{ steps.push.outputs.ref }}
         VERSION: ${{ steps.push.outputs.VERSION }}
