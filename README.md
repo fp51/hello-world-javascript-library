@@ -1,9 +1,9 @@
 # hello-world-javascript-library
-![Continuous integration](https://github.com/iadvize/hello-world-javascript-library/workflows/Continuous%20integration/badge.svg)
+![Continuous integration](https://github.com/fp51/hello-world-javascript-library/workflows/Continuous%20integration/badge.svg)
 
-This is a repo template for other javascript oss libraries at iAdvize. Use it
-for your new library to have a repository set up with lint, test and usefull
-github workflows.
+This is a repo template for other javascript oss libraries. Use it for your new
+library to have a repository set up with lint, test and usefull github
+workflows.
 
 # Features
 
@@ -14,7 +14,7 @@ Runs lint, test and build on every commit.
 ## Continuous delivery
 
 Publish canary versions of the library for pull requests. Publish latest version
-once a pull request is merged on master.
+once a pull request is merged on `main`.
 
 ## Automatic version bump
 
@@ -38,8 +38,9 @@ rebased until it can me merged.
 
 ## Automatic Github Pages documentation release 
 
-Merging a pull request on master will push a new generation of the documentation
-on `gh-pages` ([example](https://iadvize.github.io/hello-world-javascript-library/))'
+Merging a pull request on `master` will push a new generation of the
+documentation on `gh-pages`
+([example](https://fp51.github.io/hello-world-javascript-library/))'
 
 ## Dependabot
 
