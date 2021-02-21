@@ -18,8 +18,9 @@ once a pull request is merged on `main`.
 
 ## Automatic version bump
 
-Flag your pull requests with `patch`, `minor`, `major` to increment the version
-of your package or with `no-release` otherwise.
+Flag your pull requests with `Action: patch bump`, `Action: minor bump`,
+`Action: major bump` to increment the version of your package or with
+`Action: no bump` otherwise.
 
 ## Automatic changelog bump
 
@@ -33,15 +34,15 @@ corresponding part of the changelog as content.
 
 ## Automatic rebase and merge 
 
-Flagging a pull request with the `keep-rebased-then-merge` flag with keep it
-rebased until it can me merged.
+Flagging a pull request with the `Action: keep-rebased-then-merge` flag with
+keep it rebased until it can me merged.
 
 ## Automatic Github Pages documentation release 
 
 Merging a pull request on `master` will push a new generation of the
 documentation on `gh-pages`
-([example](https://fp51.github.io/hello-world-javascript-library/))'
+([example](https://fp51.github.io/hello-world-javascript-library/))
 
 ## Dependabot
 
-See [`config`](.dependabot/config.yml)
+See [`config`](.github/dependabot.yml)
