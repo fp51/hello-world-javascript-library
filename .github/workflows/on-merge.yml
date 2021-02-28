@@ -31,10 +31,18 @@ jobs:
       run: npm ci
 
     - name: Generate new docs
+      id: generation
       run: |
         npm run docs
 
+        if [ -d "docs"];  then
+          echo "::set-output name=hasDoc::true"
+        else
+          echo "::set-output name=hasDoc::false"
+        fi
+
     - name: Push gh-pages
+      if: steps.generation.outputs.hasDoc == 'true'
       run: |
         git worktree add gh-pages-content gh-pages
         cp -r docs/* gh-pages-content
