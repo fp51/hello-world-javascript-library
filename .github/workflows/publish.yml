@@ -2,16 +2,14 @@ name: Publish package
 
 on:
   workflow_run:
-    workflows: ["Continuous integration"]
+    workflows: ["Continuous integration", "On merge"]
     types:
       - completed
 
 jobs:
   publish-canary:
-    name: Publish canary
+    name: Publish
     runs-on: ubuntu-latest
-
-    if: github.event.workflow_run.head_branch != 'main'
 
     steps:
     - name: Download artifact
@@ -46,16 +44,18 @@ jobs:
         unzip package.zip
         tar -xzf package.tgz
 
-        ls -all
-
     - name: Extract metadata
       id: compute-version
       run: |
         VERSION=$(cat package/package.json | jq -r '.version')
         NAME=$(cat package/package.json | jq -r '.name')
+        REF=$(cat ref)
+        NPM_TAG=$(cat npm-tag)
 
         echo "::set-output name=version::$VERSION"
         echo "::set-output name=name::$NAME"
+        echo "::set-output name=ref::$REF"
+        echo "::set-output name=npmTag::$NPM_TAG"
 
     - name: Create deployment
       id: deployment
@@ -63,6 +63,8 @@ jobs:
       env:
         NAME: ${{ steps.compute-version.outputs.name }}
         VERSION: ${{ steps.compute-version.outputs.version }}
+        REF: ${{ steps.compute-version.outputs.ref }}
+        NPM_TAG: ${{ steps.compute-version.outputs.npmTag }}
         ARTIFACT_ID: ${{ steps.download-artifact.outputs.id }}
       with:
         github-token: ${{ secrets.TOKEN_REPO_WRITE }}
@@ -70,14 +72,13 @@ jobs:
         script: |
           const name = process.env.NAME;
           const version = process.env.VERSION;
-
-          const branch = '${{ github.event.workflow_run.head_branch }}';
-          const npmTag = '${{ github.event.workflow_run.head_branch }}-${{ github.event.workflow_run.head_sha }}';
+          const ref = process.env.REF;
+          const npmTag = process.env.NPM_TAG;
 
           const { data: deployment } = await github.repos.createDeployment({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            ref: branch,
+            ref,
             environment: 'npm',
             auto_merge: false,
             required_contexts: [],

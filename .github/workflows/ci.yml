@@ -128,9 +128,15 @@ jobs:
 
         mv $PACKAGE package.tgz
 
+        echo "${{ github.event.workflow_run.head_branch }}" > ref
+        echo "${{ github.event.workflow_run.head_branch }}-${{ github.event.workflow_run.head_sha }}" > npm-tag
+
     - name: Publish artifact
       uses: actions/upload-artifact@v2
       with:
         name: package
-        path: ./package.tgz
+        path: |
+          ./package.tgz
+          ./ref
+          ./npm-tag
 

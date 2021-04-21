@@ -175,35 +175,27 @@ jobs:
         echo "::set-output name=version-part::$VERSION_PART"
 
     - name: Create tarball
+      env:
+        VERSION_BUMP: ${{ steps.extract-version-label.outputs.versionBump }}
+        VERSION: ${{ steps.push.outputs.version }}
       run: |
         PACKAGE=$(npm pack)
 
         mv $PACKAGE package.tgz
 
+        NPM_TAG=$([ $VERSION_BUMP == "beta" ] && echo 'beta' || echo 'latest')
+
+        echo $NPM_TAG > npm-tag
+        echo $VERSION > ref
+
     - name: Publish artifact
       uses: actions/upload-artifact@v2
       with:
         name: package
-        path: ./package.tgz
-
-    - name: Extract artifact id
-      id: artifact-id
-      uses: actions/github-script@v3.1.0
-      with:
-        script: |
-          const artifacts = await github.actions.listWorkflowRunArtifacts({
-             owner: context.repo.owner,
-             repo: context.repo.repo,
-             run_id: ${{ github.run_id }},
-          });
-
-          console.log(JSON.stringify(artifacts))
-
-          const matchArtifact = artifacts.data.artifacts.filter((artifact) => {
-            return artifact.name == "package"
-          })[0];
-
-          console.log(`::set-output name=id::${matchArtifact.id}`)
+        path: |
+          ./package.tgz
+          ./npm-tag
+          ./ref
 
     - name: Create Release
       if: steps.extract-version-label.outputs.versionBump != 'beta'
@@ -223,37 +215,3 @@ jobs:
             draft: false,
             prerelease: false,
           })
-
-    - name: Create deployment
-      id: deployment
-      uses: actions/github-script@v3
-      env:
-        VERSION: ${{ steps.push.outputs.VERSION }}
-        NAME: ${{ steps.push.outputs.NAME }}
-        VERSION_BUMP: ${{ steps.extract-version-labels.outputs.versionBump }}
-        ARTIFACT_ID: ${{ steps.artifact-id.outputs.id }}
-      with:
-        github-token: ${{ secrets.TOKEN_REPO_WRITE }}
-        previews: 'ant-man-preview,flash-preview'
-        script: |
-          const name = process.env.NAME;
-          const version = process.env.VERSION;
-
-          const npmTag = process.env.VERSION_BUMP === 'beta' ? 'beta' : 'latest';
-
-          const { data: deployment } = await github.repos.createDeployment({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            ref: `v${version}`,
-            environment: 'npm',
-            auto_merge: false,
-            required_contexts: [],
-            payload: {
-              version,
-              name,
-              artifact_id: process.env.ARTIFACT_ID,
-              npmTag,
-            },
-            description: ` ${name}@${version} on npm`,
-            production_environment: true,
-          });
