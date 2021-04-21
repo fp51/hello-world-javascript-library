@@ -71,6 +71,7 @@ jobs:
           const name = process.env.NAME;
           const version = process.env.VERSION;
 
+          const branch = '${{ github.event.workflow_run.head_branch }}';
           const npmTag = '${{ github.event.workflow_run.head_branch }}-${{ github.event.workflow_run.head_sha }}';
 
           const { data: deployment } = await github.repos.createDeployment({
