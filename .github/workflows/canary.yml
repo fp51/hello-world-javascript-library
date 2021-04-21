@@ -46,6 +46,8 @@ jobs:
         unzip package.zip
         tar -xzf package.tgz
 
+        ls -all
+
     - name: Extract metadata
       id: compute-version
       run: |
