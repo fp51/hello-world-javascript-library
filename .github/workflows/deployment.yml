@@ -25,31 +25,35 @@ jobs:
             repo: context.repo.repo,
             deployment_id: process.env.DEPLOYMENT_ID,
             environment_url: npmUrl,
-            description: `Deployed ${name}@${version} on npm`,
+            description: `Publishing ${name}@${version} on npm`,
             auto_inactive: false,
             state: 'in_progress',
           });
 
-    - name: Checkout code
-      uses: actions/checkout@v2
+    - name: 'Download artifact'
+      id: download-artifact
+      uses: actions/github-script@v3.1.0
       with:
-        ref: ${{ github.event.deployment.payload.ref }}
+        script: |
+          const download = await github.actions.downloadArtifact({
+             owner: context.repo.owner,
+             repo: context.repo.repo,
+             artifact_id: context.payload.deployment.payload.artifact_id,
+             archive_format: 'zip',
+          });
 
-    - name: Git config
+          const fs = require('fs');
+          fs.writeFileSync('${{github.workspace}}/package.zip', Buffer.from(download.data));
+
+    - name: 'Unzip artifact'
       run: |
-        git config user.name "Github actions"
-        git config user.email "github-actions@fp51.dev"
+        unzip package.zip
+        tar -xvf package.tgz
 
     - uses: actions/setup-node@v2
       with:
         registry-url: https://registry.npmjs.org/
         node-version: '14'
-
-    - name: Install
-      run: npm ci
-
-    - name: Build
-      run: npm run build
 
     - name: Publish npm
       id: publish
@@ -58,8 +62,10 @@ jobs:
         VERSION: ${{ github.event.deployment.payload.version }}
         TAG: ${{ github.event.deployment.payload.npmTag }}
       run: |
+        cd package
+
         npm version $VERSION --allow-same-version --no-git-tag-version
-        npm publish --access public --tag $TAG
+        npm publish package.tgz --access public --tag $TAG
 
         echo "::set-output name=state::done"
 
@@ -84,7 +90,7 @@ jobs:
             repo: context.repo.repo,
             deployment_id: process.env.DEPLOYMENT_ID,
             environment_url: npmUrl,
-            description: `Deployed ${name}@${version} on npm`,
+            description: `Published ${name}@${version} on npm`,
             auto_inactive: false,
             state,
           });

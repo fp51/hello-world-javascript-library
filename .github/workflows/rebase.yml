@@ -1,8 +1,8 @@
 name: Rebase pull requests when main change
 
 on:
-  pull_request:
-    types: [labeled]
+  pull_request_target:
+    types: [labeled, closed]
   push:
     branches:
     - main

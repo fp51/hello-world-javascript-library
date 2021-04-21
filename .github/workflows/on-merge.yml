@@ -1,7 +1,7 @@
 name: On merge
 
 on:
-  pull_request:
+  pull_request_target:
     branches: [main]
     types: [closed]
 
@@ -10,7 +10,7 @@ jobs:
     name: 'generate docs and push'
     runs-on: ubuntu-latest
 
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request_target.merged == true
 
     steps:
     - uses: actions/checkout@v2
@@ -62,11 +62,11 @@ jobs:
     - generate-docs
 
     if: >
-      github.event.pull_request.merged == true && (
-        contains(github.event.pull_request.labels.*.name, 'Action: patch bump')
-      || contains(github.event.pull_request.labels.*.name, 'Action: minor bump')
-      || contains(github.event.pull_request.labels.*.name, 'Action: major bump')
-      || contains(github.event.pull_request.labels.*.name, 'Action: beta bump')
+      github.event.pull_request_target.merged == true && (
+        contains(github.event.pull_request_target.labels.*.name, 'Action: patch bump')
+      || contains(github.event.pull_request_target.labels.*.name, 'Action: minor bump')
+      || contains(github.event.pull_request_target.labels.*.name, 'Action: major bump')
+      || contains(github.event.pull_request_target.labels.*.name, 'Action: beta bump')
       )
 
     steps:
@@ -82,7 +82,7 @@ jobs:
 
     - uses: actions/setup-node@v2
       with:
-        node-version: '12.x'
+        node-version: '14'
 
     - name: Install
       run: npm ci
@@ -102,7 +102,7 @@ jobs:
 
           const versionLabelsNames = Object.keys(versionLabels);
 
-          const labels = context.payload.pull_request.labels;
+          const labels = context.payload.pull_request_target.labels;
 
           const versionLabelsPresent = labels
             .filter(label => versionLabelsNames.includes(label.name))
@@ -160,41 +160,6 @@ jobs:
         NAME=$(cat package.json | jq -r '.name')
         echo "::set-output name=name::$NAME"
 
-    - name: Create deployment
-      id: deployment
-      uses: actions/github-script@v3
-      env:
-        REF: ${{ steps.push.outputs.ref }}
-        VERSION: ${{ steps.push.outputs.VERSION }}
-        NAME: ${{ steps.push.outputs.NAME }}
-        VERSION_BUMP: ${{ steps.extract-version-labels.outputs.versionBump }}
-      with:
-        github-token: ${{ secrets.TOKEN_REPO_WRITE }}
-        previews: 'ant-man-preview,flash-preview'
-        script: |
-          const ref = process.env.REF;
-          const name = process.env.NAME;
-          const version = process.env.VERSION;
-
-          const npmTag = process.env.VERSION_BUMP === 'beta' ? 'beta' : 'latest';
-
-          const { data: deployment } = await github.repos.createDeployment({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            ref: `v${version}`,
-            environment: 'npm',
-            auto_merge: false,
-            required_contexts: [],
-            payload: {
-              version,
-              name,
-              ref,
-              npmTag,
-            },
-            description: `Deploy ${name}@${version} on npm`,
-            production_environment: true,
-          });
-
     - name: Extract release changelog
       id: extract-changelog
       if: steps.extract-version-label.outputs.versionBump != 'beta'
@@ -208,6 +173,35 @@ jobs:
         echo VERSION_PART=$VERSION_PART
 
         echo "::set-output name=version-part::$VERSION_PART"
+
+    - name: Create tarball
+      run: |
+        PACKAGE=$(npm pack)
+
+        mv $PACKAGE package.tgz
+
+    - name: Publish artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: package
+        path: ./package.tgz
+
+    - name: Extract artifact id
+      id: artifact-id
+      uses: actions/github-script@v3.1.0
+      with:
+        script: |
+          const artifacts = await github.actions.listWorkflowRunArtifacts({
+             owner: context.repo.owner,
+             repo: context.repo.repo,
+             run_id: ${{github.run_id }},
+          });
+
+          const matchArtifact = artifacts.data.artifacts.filter((artifact) => {
+            return artifact.name == "package"
+          })[0];
+
+          console.log("::set-output name=id::${matchArtifact.id}")
 
     - name: Create Release
       if: steps.extract-version-label.outputs.versionBump != 'beta'
@@ -227,3 +221,37 @@ jobs:
             draft: false,
             prerelease: false,
           })
+
+    - name: Create deployment
+      id: deployment
+      uses: actions/github-script@v3
+      env:
+        VERSION: ${{ steps.push.outputs.VERSION }}
+        NAME: ${{ steps.push.outputs.NAME }}
+        VERSION_BUMP: ${{ steps.extract-version-labels.outputs.versionBump }}
+        ARTIFACT_ID: ${{ steps.artifact-id.outputs.id }}
+      with:
+        github-token: ${{ secrets.TOKEN_REPO_WRITE }}
+        previews: 'ant-man-preview,flash-preview'
+        script: |
+          const name = process.env.NAME;
+          const version = process.env.VERSION;
+
+          const npmTag = process.env.VERSION_BUMP === 'beta' ? 'beta' : 'latest';
+
+          const { data: deployment } = await github.repos.createDeployment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            ref: `v${version}`,
+            environment: 'npm',
+            auto_merge: false,
+            required_contexts: [],
+            payload: {
+              version,
+              name,
+              artifact_id: process.env.ARTIFACT_ID,
+              npmTag,
+            },
+            description: `Publish ${name}@${version} on npm`,
+            production_environment: true,
+          });
