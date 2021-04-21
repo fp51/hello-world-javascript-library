@@ -186,7 +186,7 @@ jobs:
         NPM_TAG=$([ $VERSION_BUMP == "beta" ] && echo 'beta' || echo 'latest')
 
         echo $NPM_TAG > npm-tag
-        echo $VERSION > ref
+        echo v$VERSION > ref
 
     - name: Publish artifact
       uses: actions/upload-artifact@v2
