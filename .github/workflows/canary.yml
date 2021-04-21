@@ -69,7 +69,7 @@ jobs:
           const name = process.env.NAME;
           const version = process.env.VERSION;
 
-          const branch = ${{ github.event.workflow_run.head_branch }};
+          const branch = '${{ github.event.workflow_run.head_branch }}';
 
           const { data: deployment } = await github.repos.createDeployment({
             owner: context.repo.owner,
