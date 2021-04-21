@@ -36,7 +36,7 @@ jobs:
              archive_format: 'zip',
           });
 
-          console.log("::set-output name=id::${matchArtifact.id}")
+          console.log(`::set-output name=id::${matchArtifact.id}`)
 
           const fs = require('fs');
           fs.writeFileSync('${{github.workspace}}/package.zip', Buffer.from(download.data));
