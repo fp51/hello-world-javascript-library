@@ -201,7 +201,7 @@ jobs:
             return artifact.name == "package"
           })[0];
 
-          console.log("::set-output name=id::${matchArtifact.id}")
+          console.log(`::set-output name=id::${matchArtifact.id}`)
 
     - name: Create Release
       if: steps.extract-version-label.outputs.versionBump != 'beta'
