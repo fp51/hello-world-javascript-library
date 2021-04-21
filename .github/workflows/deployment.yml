@@ -58,13 +58,7 @@ jobs:
       env:
         NODE_AUTH_TOKEN: ${{ secrets.TOKEN_NPM }}
       run: |
-        TAG=${{ github.event.deployment.payload.npmTag }}
-
-        if [ -n "$TAG" ]; then
-          npm publish package.tgz --access public --tag $TAG
-        else
-          npm publish package.tgz --access public
-        fi
+        npm publish package.tgz --access public --tag ${{ github.event.deployment.payload.npmTag }}
 
         echo "::set-output name=state::done"
 
