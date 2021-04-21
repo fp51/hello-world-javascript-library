@@ -84,7 +84,6 @@ jobs:
               version,
               name,
               artifact_id: process.env.ARTIFACT_ID,
-              npmTag: branch,
             },
             description: `Publish ${name}@${version} on npm`,
             production_environment: true,

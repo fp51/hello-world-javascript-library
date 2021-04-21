@@ -10,8 +10,6 @@ jobs:
     steps:
     - name: Update deployment status
       uses: actions/github-script@v3
-      env:
-        DEPLOYMENT_ID: ${{ github.event.deployment.id }}
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         previews: 'ant-man,flash'
@@ -23,7 +21,7 @@ jobs:
           const { data: deploymentStatus } = github.repos.createDeploymentStatus({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            deployment_id: process.env.DEPLOYMENT_ID,
+            deployment_id: '${{ github.event.deployment.id }}',
             environment_url: npmUrl,
             description: `Publishing ${name}@${version} on npm`,
             auto_inactive: false,
@@ -59,18 +57,20 @@ jobs:
       id: publish
       env:
         NODE_AUTH_TOKEN: ${{ secrets.TOKEN_NPM }}
-        TAG: ${{ github.event.deployment.payload.npmTag }}
       run: |
-        npm publish package.tgz --access public --tag $TAG
+        TAG=${{ github.event.deployment.payload.npmTag }}
+
+        if [ -n "$TAG" ]; then
+          npm publish package.tgz --access public --tag $TAG
+        else
+          npm publish package.tgz --access public
+        fi
 
         echo "::set-output name=state::done"
 
     - name: Update deployment status
       if: always()
       uses: actions/github-script@v3
-      env:
-        DEPLOYMENT_ID: ${{ github.event.deployment.id }}
-        PUBLISH_STATE: ${{ steps.publish.outputs.state }}
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         previews: 'ant-man,flash'
@@ -79,12 +79,12 @@ jobs:
           const version = context.payload.deployment.payload.version;
           const npmUrl = `https://www.npmjs.com/package/${name}/v/${version}`;
 
-          const state = process.env.PUBLISH_STATE === 'done' ? 'success' : 'failure';
+          const state = '${{ steps.publish.outputs.state }}' === 'done' ? 'success' : 'failure';
 
           const { data: deploymentStatus } = github.repos.createDeploymentStatus({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            deployment_id: process.env.DEPLOYMENT_ID,
+            deployment_id: '${{ github.event.deployment.id }}',
             environment_url: npmUrl,
             description: `Published ${name}@${version} on npm`,
             auto_inactive: false,
