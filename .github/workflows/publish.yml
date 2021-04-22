@@ -83,22 +83,20 @@ jobs:
         echo "::set-output name=npmTag::$NPM_TAG"
 
     - name: Create deployment
+      id: deployment
       if: steps.find-artifact.outputs.found == 'true'
       uses: actions/github-script@v3
       env:
         NAME: ${{ steps.compute-version.outputs.name }}
         VERSION: ${{ steps.compute-version.outputs.version }}
         REF: ${{ steps.compute-version.outputs.ref }}
-        NPM_TAG: ${{ steps.compute-version.outputs.npmTag }}
         ARTIFACT_ID: ${{ steps.download-artifact.outputs.id }}
       with:
-        github-token: ${{ secrets.TOKEN_REPO_WRITE }}
         previews: 'ant-man-preview,flash-preview'
         script: |
           const name = process.env.NAME;
           const version = process.env.VERSION;
           const ref = process.env.REF;
-          const npmTag = process.env.NPM_TAG;
 
           const { data: deployment } = await github.repos.createDeployment({
             owner: context.repo.owner,
@@ -107,12 +105,72 @@ jobs:
             environment: 'npm',
             auto_merge: false,
             required_contexts: [],
-            payload: {
-              version,
-              name,
-              artifact_id: process.env.ARTIFACT_ID,
-              npmTag,
-            },
             description: `Publish ${name}@${version} on npm`,
             production_environment: true,
+          });
+
+          console.log(`::set-output name=id::${deployment.id}`)
+
+    - name: Update deployment status
+      uses: actions/github-script@v3
+      env:
+        NAME: ${{ steps.compute-version.outputs.name }}
+        VERSION: ${{ steps.compute-version.outputs.version }}
+        DEPLOYMENT_ID: ${{ steps.deployment.outputs.id }}
+      with:
+        previews: 'ant-man,flash'
+        script: |
+          const name = process.env.NAME;
+          const version = process.env.VERSION;
+          const npmUrl = `https://www.npmjs.com/package/${name}/v/${version}`;
+
+          const { data: deploymentStatus } = github.repos.createDeploymentStatus({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            deployment_id: process.env.DEPLOYMENT_ID,
+            environment_url: npmUrl,
+            description: `Publishing ${name}@${version} on npm`,
+            auto_inactive: false,
+            state: 'in_progress',
+          });
+
+    - uses: actions/setup-node@v2
+      with:
+        registry-url: https://registry.npmjs.org/
+        node-version: '14'
+
+    - name: Publish npm
+      id: publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.TOKEN_NPM }}
+        NPM_TAG: ${{ steps.compute-version.outputs.npmTag }}
+      run: |
+        npm publish package.tgz --access public --tag $NPM_TAG
+
+        echo "::set-output name=state::done"
+
+    - name: Update deployment status
+      if: always()
+      uses: actions/github-script@v3
+      env:
+        NAME: ${{ steps.compute-version.outputs.name }}
+        VERSION: ${{ steps.compute-version.outputs.version }}
+        DEPLOYMENT_ID: ${{ steps.deployment.outputs.id }}
+      with:
+        previews: 'ant-man,flash'
+        script: |
+          const name = process.env.NAME;
+          const version = process.env.VERSION;
+          const npmUrl = `https://www.npmjs.com/package/${name}/v/${version}`;
+
+          const state = '${{ steps.publish.outputs.state }}' === 'done' ? 'success' : 'failure';
+
+          const { data: deploymentStatus } = github.repos.createDeploymentStatus({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            deployment_id: process.env.DEPLOYMENT_ID,
+            environment_url: npmUrl,
+            description: `Published ${name}@${version} on npm`,
+            auto_inactive: false,
+            state,
           });
