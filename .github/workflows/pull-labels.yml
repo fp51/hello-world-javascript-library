@@ -40,3 +40,46 @@ jobs:
           console.log(`::debug ::${versionLabelsPresent.length} matching labels`);
 
           throw new Error(`Should have one and only one of ${versionLabels.join(', ')} labels`);
+
+    - name: 'Activate auto-merge'
+      uses: actions/github-script@v3
+      with:
+        github-token: "${{ secrets.TOKEN_REPO_WRITE }}"
+        script: |
+            const findPullRequestQuery = `
+              query findPullRequest($owner: String!, $repo: String!, $number: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  pullRequest(number: $number) {
+                    id
+                  }
+                }
+              }
+            `
+
+            const { findPullRequest } = await github.graphql(findPullRequestQuery, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              number: context.payload.pull_request.number,
+            })
+
+            const {
+              repository: {
+                pullRequest: {
+                  id: pullRequestId
+                }
+              }
+            } = findPullRequest
+
+
+            const query = `
+              mutation enableAutoMerge($id: String!) {
+                enablePullRequestAutoMerge(input: { pullRequestId: $id }) {
+                  pullRequest {
+                    id
+                  }
+                }
+            }`;
+
+            await github.graphql(query, {
+              id: pullRequestId
+            })
