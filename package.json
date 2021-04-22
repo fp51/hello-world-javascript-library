@@ -1,6 +1,6 @@
 {
   "name": "@fp51/hello-world",
-  "version": "0.2.2-beta.2",
+  "version": "0.2.2-beta.3",
   "description": "Say hello",
   "main": "dist/index.js",
   "module": "esm/index.js",
