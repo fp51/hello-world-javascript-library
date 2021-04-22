@@ -10,44 +10,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: 'Activate auto-merge'
-      uses: actions/github-script@v3
+    - name: Check if version label is present
+      uses: actions/github-script@v2
       with:
-        github-token: "${{ secrets.TOKEN_REPO_WRITE }}"
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-            const findPullRequestQuery = `
-              query findPullRequest($owner: String!, $repo: String!, $number: Int!) {
-                repository(owner: $owner, name: $repo) {
-                  pullRequest(number: $number) {
-                    id
-                  }
-                }
-              }
-            `
+          const versionLabels = [
+            'Action: no bump',
+            'Action: beta bump',
+            'Action: patch bump',
+            'Action: minor bump',
+            'Action: major bump',
+          ];
 
-            const result = await github.graphql(findPullRequestQuery, {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              number: context.payload.pull_request.number,
-            })
+          const { data: labels } = await github.issues.listLabelsOnIssue({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.payload.pull_request.number,
+            per_page: 100,
+          });
 
-            const {
-              repository: {
-                pullRequest: {
-                  id: pullRequestId
-                }
-              }
-            } = result
+          const versionLabelsPresent = labels
+            .filter(label => versionLabels.includes(label.name))
 
-            const query = `
-              mutation enableAutoMerge($id: String!) {
-                enablePullRequestAutoMerge(input: { pullRequestId: $id }) {
-                  pullRequest {
-                    id
-                  }
-                }
-            }`;
+          if (versionLabelsPresent.length === 1) {
+            return;
+          }
 
-            await github.graphql(query, {
-              id: pullRequestId
-            })
+          console.log(`::debug ::${versionLabelsPresent.length} matching labels`);
+
+          throw new Error(`Should have one and only one of ${versionLabels.join(', ')} labels`);
