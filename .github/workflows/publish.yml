@@ -92,7 +92,7 @@ jobs:
         REF: ${{ steps.compute-version.outputs.ref }}
         ARTIFACT_ID: ${{ steps.download-artifact.outputs.id }}
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ secrets.TOKEN_REPO_WRITE }}
         previews: 'ant-man-preview,flash-preview'
         script: |
           const name = process.env.NAME;
@@ -119,7 +119,7 @@ jobs:
         VERSION: ${{ steps.compute-version.outputs.version }}
         DEPLOYMENT_ID: ${{ steps.deployment.outputs.id }}
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ secrets.TOKEN_REPO_WRITE }}
         previews: 'ant-man,flash'
         script: |
           const name = process.env.NAME;
@@ -159,7 +159,7 @@ jobs:
         VERSION: ${{ steps.compute-version.outputs.version }}
         DEPLOYMENT_ID: ${{ steps.deployment.outputs.id }}
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ secrets.TOKEN_REPO_WRITE }}
         previews: 'ant-man,flash'
         script: |
           const name = process.env.NAME;
