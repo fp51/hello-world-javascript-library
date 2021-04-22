@@ -31,16 +31,13 @@ jobs:
               number: context.payload.pull_request.number,
             })
 
-            console.log({ result })
-
             const {
               repository: {
                 pullRequest: {
                   id: pullRequestId
                 }
               }
-            } = findPullRequest
-
+            } = result
 
             const query = `
               mutation enableAutoMerge($id: String!) {
