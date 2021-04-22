@@ -36,7 +36,7 @@ jobs:
 
     - name: Download artifact
       id: download-artifact
-      if: steps.find-artifact.outputs.found == true
+      if: steps.find-artifact.outputs.found == 'true'
       uses: actions/github-script@v3.1.0
       with:
         script: |
@@ -63,14 +63,14 @@ jobs:
           fs.writeFileSync('${{github.workspace}}/package.zip', Buffer.from(download.data));
 
     - name: Unzip artifact
-      if: steps.find-artifact.outputs.found == true
+      if: steps.find-artifact.outputs.found == 'true'
       run: |
         unzip package.zip
         tar -xzf package.tgz
 
     - name: Extract metadata
       id: compute-version
-      if: steps.find-artifact.outputs.found == true
+      if: steps.find-artifact.outputs.found == 'true'
       run: |
         VERSION=$(cat package/package.json | jq -r '.version')
         NAME=$(cat package/package.json | jq -r '.name')
@@ -83,7 +83,7 @@ jobs:
         echo "::set-output name=npmTag::$NPM_TAG"
 
     - name: Create deployment
-      if: steps.find-artifact.outputs.found == true
+      if: steps.find-artifact.outputs.found == 'true'
       uses: actions/github-script@v3
       env:
         NAME: ${{ steps.compute-version.outputs.name }}
