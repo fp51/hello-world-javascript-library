@@ -56,11 +56,13 @@ jobs:
               }
             `
 
-            const { findPullRequest } = await github.graphql(findPullRequestQuery, {
+            const result = await github.graphql(findPullRequestQuery, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               number: context.payload.pull_request.number,
             })
+
+            console.log({ result })
 
             const {
               repository: {
