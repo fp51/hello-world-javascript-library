@@ -38,7 +38,7 @@ jobs:
       if: steps.find-artifact.outputs.found == 'true'
       uses: actions/github-script@v3.1.0
       env:
-        ARTIFACT_ID: ${{ steps.compute-version.find-artifact.id }}
+        ARTIFACT_ID: ${{ steps.find-artifact.outputs.id }}
       with:
         script: |
           const download = await github.actions.downloadArtifact({
