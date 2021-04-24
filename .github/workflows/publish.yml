@@ -102,7 +102,7 @@ jobs:
               version,
               artifactId: process.env.ARTIFACT_ID,
               npmTag: process.env.NPM_TAG,
-            }
+            },
             production_environment: true,
           });
 
