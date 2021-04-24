@@ -50,7 +50,6 @@ jobs:
           fs.writeFileSync('${{github.workspace}}/package.zip', Buffer.from(download.data));
 
     - name: Unzip artifact
-      if: steps.find-artifact.outputs.found == 'true'
       run: |
         unzip package.zip
 
