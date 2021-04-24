@@ -49,6 +49,11 @@ jobs:
           const fs = require('fs');
           fs.writeFileSync('${{github.workspace}}/package.zip', Buffer.from(download.data));
 
+    - name: Unzip artifact
+      if: steps.find-artifact.outputs.found == 'true'
+      run: |
+        unzip package.zip
+
     - uses: actions/setup-node@v2
       with:
         registry-url: https://registry.npmjs.org/
